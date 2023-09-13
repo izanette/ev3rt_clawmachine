@@ -132,7 +132,7 @@ void control()
 void home_x()
 {
     uint8_t val = ev3_color_sensor_get_reflect(color_sensor);
-    while(val < 50)
+    while(val < 25)
     {
         motor(x_motor, 10);
         tslp_tsk(10);
@@ -141,16 +141,61 @@ void home_x()
     motor(x_motor, 0);
 }
 
+void home_y()
+{
+    colorid_t val = ev3_color_sensor_get_color(color_sensor);
+    while(val != COLOR_BLUE && val != COLOR_GREEN)
+    {
+        motor(y_motor, 10);
+        tslp_tsk(10);
+        val = ev3_color_sensor_get_color(color_sensor);
+    }
+    
+    // run a little bit more so it points towards 
+    // the center of the blue/green brick
+    tslp_tsk(500); // todo: substitute by a count movement instead of a timed one
+    motor(y_motor, 0);
+}
+
+void home_z()
+{
+    // assume home_y was done before. so either the color sensor is sensing BLUE or GREEN
+    colorid_t val = ev3_color_sensor_get_color(color_sensor);
+    if (val != COLOR_BLUE && val != COLOR_GREEN)
+    {
+        //error
+    }
+    
+    while(val == COLOR_GREEN)
+    {
+        motor(z_motor, -10); // go up
+        tslp_tsk(10);
+        val = ev3_color_sensor_get_color(color_sensor);
+    }
+    motor(z_motor, 0);
+
+    // find the limit between the blue and the green bricks
+    while(val != COLOR_GREEN)
+    {
+        motor(z_motor, 10); // go down
+        tslp_tsk(10);
+        val = ev3_color_sensor_get_color(color_sensor);
+    }
+    motor(z_motor, 0);
+}
+
 void home()
 {
     home_x();
+    home_y();
+    home_z();
 }
 
 void main_task(intptr_t unused)
 {
     char buf[100];
     
-    print(0, "App: Claw Machine v01");
+    print(0, "Claw Machine v01");
     sprintf(buf, "Port%c:X motor", 'A' + x_motor);
     print(1, buf);
     sprintf(buf, "Port%c:Y motor", 'A' + y_motor);
@@ -173,7 +218,9 @@ void main_task(intptr_t unused)
     // Configure sensors
     ev3_sensor_config(ir_sensor, INFRARED_SENSOR);
     ev3_sensor_config(color_sensor, COLOR_SENSOR);
-
+    
+    waitEnterButtonPressed();
+    
     home();
     
     control();
