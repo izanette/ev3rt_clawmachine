@@ -32,6 +32,9 @@ void control(intptr_t unused)
 {
     char buf[100];
     
+    ev3_lcd_fill_rect(0, 0, EV3_LCD_WIDTH, EV3_LCD_HEIGHT, EV3_LCD_WHITE);
+    draw_title("Control", 0, 0, MENU_FONT);
+    
     clearScreen();
     print(0, APP_NAME);
     
@@ -115,13 +118,13 @@ void control(intptr_t unused)
         tslp_tsk(10);
         
         sprintf(buf, "X pos: %ld", x_motor->get_pos());
-        print(1, buf);
-        sprintf(buf, "Y pos: %ld", y_motor->get_pos());
         print(2, buf);
-        sprintf(buf, "Z pos: %ld", z_motor->get_pos());
+        sprintf(buf, "Y pos: %ld", y_motor->get_pos());
         print(3, buf);
-        sprintf(buf, "C pos: %ld", c_motor->get_pos());
+        sprintf(buf, "Z pos: %ld", z_motor->get_pos());
         print(4, buf);
+        sprintf(buf, "C pos: %ld", c_motor->get_pos());
+        print(5, buf);
     }
 }
 
@@ -203,18 +206,21 @@ void home_c()
 
 void homing(intptr_t unused)
 {
+    ev3_lcd_fill_rect(0, 0, EV3_LCD_WIDTH, EV3_LCD_HEIGHT, EV3_LCD_WHITE);
+    draw_title("Homing", 0, 0, MENU_FONT);
     
     clearScreen();
-    print(0, APP_NAME);
-    print(1, "Homing X");
+    print(2, "Homing X");
     home_x();
-    print(2, "Homing Y");
+    print(3, "Homing Y");
     home_y();
-    print(3, "Homing Z");
+    print(4, "Homing Z");
     home_z();
-    print(4, "Homing C");
+    print(5, "Homing C");
     home_c();
-    print(5, "Finished homing");
+    print(6, "Finished homing");
     ev3_color_sensor_get_reflect(COLOR_SENSOR_PORT); // this mode uses less energy
+    
+    tslp_tsk(1000);
 }
 

@@ -63,6 +63,8 @@ void main_task(intptr_t unused)
     
     waitEnterButtonPressed();
     
+    ev3_font_get_size(MENU_FONT, &default_menu_font_width, &default_menu_font_height);
+    
     while(1) {
         show_cli_menu(&climenu_main, 0, 0, MENU_FONT);
         const CliMenuEntry *cme = select_menu_entry(&climenu_main, 0, MENU_FONT_HEIGHT, MENU_FONT);
