@@ -1,6 +1,9 @@
 #include "ev3api.h"
 #include "utils.h"
 
+bool util_time_start_set = false;
+SYSTIM util_time_start;
+
 void waitEnterButtonPressed()
 {
     while(!ev3_button_is_pressed(ENTER_BUTTON));
@@ -70,4 +73,26 @@ void print(int line, const char* msg)
     
     ev3_lcd_draw_string(lcdclean, 0, fonth * line);
     ev3_lcd_draw_string(msg, 0, fonth * line);
+}
+
+float getTimeMillis()
+{
+    if (!util_time_start_set)
+    {
+        get_tim(&util_time_start);
+        util_time_start_set = true;
+    }
+    
+    //const float TIME_TO_SECONDS = 1000.0;
+    SYSTIM now;
+    get_tim(&now);
+    return (now - util_time_start); // / TIME_TO_SECONDS;
+}
+
+void motor(motor_port_t m, int power)
+{
+    if (power)
+        ev3_motor_set_power(m, power);
+    else
+        ev3_motor_stop(m, false);
 }

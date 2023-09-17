@@ -6,6 +6,7 @@
 #include "ev3api.h"
 #include "app.h"
 #include "utils.h"
+#include "motor.h"
 #include <stdlib.h>
 
 #define DEBUG
@@ -16,43 +17,27 @@
 #define _debug(x)
 #endif
 
-#define MINVAL(X, Y)  ((X) < (Y) ? (X) : (Y))
-#define MAXVAL(X, Y)  ((X) > (Y) ? (X) : (Y))
+const motor_port_t x_motor_port   = EV3_PORT_A;
+const motor_port_t y_motor_port   = EV3_PORT_D;
+const motor_port_t z_motor_port   = EV3_PORT_C;
+const motor_port_t c_motor_port   = EV3_PORT_B;
 
-const motor_port_t x_motor   = EV3_PORT_A;
-const motor_port_t y_motor   = EV3_PORT_D;
-const motor_port_t z_motor   = EV3_PORT_B;
-const motor_port_t c_motor   = EV3_PORT_C;
 const sensor_port_t ir_sensor = EV3_PORT_1;
 const sensor_port_t color_sensor = EV3_PORT_4;
 
-void motor(motor_port_t m, int power)
-{
-    if (power)
-        ev3_motor_set_power(m, power);
-    else
-        ev3_motor_stop(m, false);
-}
+Motor* x_motor;
+Motor* y_motor;
+Motor* z_motor;
+Motor* c_motor;
 
-void wait_no_button_pressed()
-{
-    while(1)
-    {
-        // wait 10 mili-seconds
-        tslp_tsk(10);
-        
-        int stop = 1;
-        for(int i = 0; i < 6; i++)
-        {
-            if (ev3_button_is_pressed((button_t)i))
-                stop = 0;
-        }
-        if (stop) break;
-    }
-}
 
 void control()
 {
+    char buf[100];
+    
+    clearScreen();
+    print(0, "Claw Machine v01");
+    
     while (1)
     {
         ir_remote_t val = ev3_infrared_sensor_get_remote(ir_sensor);
@@ -68,85 +53,101 @@ void control()
                 // x motor
                 if (redup)
                 {
-                    motor(x_motor, 10);
+                    x_motor->backward();
                 }
                 else if (reddown)
                 {
-                    motor(x_motor, -10);
+                    x_motor->forward();
                 }
                 else
                 {
-                    motor(x_motor, 0);
+                    x_motor->stop();
                 }
                 
                 // y motor
                 if (blueup)
                 {
-                    motor(y_motor, 10);
+                    y_motor->backward();
                 }
                 else if (bluedown)
                 {
-                    motor(y_motor, -10);
+                    y_motor->forward();
                 }
                 else
                 {
-                    motor(y_motor, 0);
+                    y_motor->stop();
                 }
             }
-            else // z and c motors
+            else // z and claw motors
             {
                 // z motor
                 if (redup)
                 {
-                    motor(z_motor, -10);
+                    z_motor->backward();
                 }
                 else if (reddown)
                 {
-                    motor(z_motor, 10);
+                    z_motor->forward();
                 }
                 else
                 {
-                    motor(z_motor, 0);
+                    z_motor->stop();
                 }
                 
-                // c motor
+                // claw motor
                 if (blueup)
                 {
-                    motor(c_motor, -10);
+                    c_motor->forward();
                 }
                 else if (bluedown)
                 {
-                    motor(c_motor, 10);
+                    c_motor->backward();
                 }
                 else
                 {
-                    motor(c_motor, 0);
+                    c_motor->stop();
                 }
             }
         }
         // wait 10 mili-seconds
         tslp_tsk(10);
+        
+        sprintf(buf, "X pos: %ld", x_motor->get_pos());
+        print(1, buf);
+        sprintf(buf, "Y pos: %ld", y_motor->get_pos());
+        print(2, buf);
+        sprintf(buf, "Z pos: %ld", z_motor->get_pos());
+        print(3, buf);
+        sprintf(buf, "C pos: %ld", c_motor->get_pos());
+        print(4, buf);
     }
 }
 
 void home_x()
 {
     uint8_t val = ev3_color_sensor_get_reflect(color_sensor);
+    float prev_acc = x_motor->acc;
+    x_motor->acc = 0.0;
     while(val < 25)
     {
-        motor(x_motor, 10);
+        x_motor->backward(false);
         tslp_tsk(10);
         val = ev3_color_sensor_get_reflect(color_sensor);
     }
-    motor(x_motor, 0);
+    motor(x_motor_port, 0);
+    x_motor->stop();
+    x_motor->acc = prev_acc;
+    x_motor->reset_pos();
 }
 
 void home_y()
 {
     colorid_t val = ev3_color_sensor_get_color(color_sensor);
+    float prev_acc = y_motor->acc;
+    y_motor->acc = 0.0;
     while(val != COLOR_BLUE && val != COLOR_GREEN)
     {
-        motor(y_motor, 10);
+        y_motor->backward(false);
         tslp_tsk(10);
         val = ev3_color_sensor_get_color(color_sensor);
     }
@@ -154,41 +155,65 @@ void home_y()
     // run a little bit more so it points towards 
     // the center of the blue/green brick
     tslp_tsk(500); // todo: substitute by a count movement instead of a timed one
-    motor(y_motor, 0);
+    y_motor->stop();
+    y_motor->acc = prev_acc;
+    y_motor->reset_pos();
 }
 
 void home_z()
 {
     // assume home_y was done before. so either the color sensor is sensing BLUE or GREEN
     colorid_t val = ev3_color_sensor_get_color(color_sensor);
+    float prev_acc = z_motor->acc;
+    z_motor->acc = 0.0;
     if (val != COLOR_BLUE && val != COLOR_GREEN)
     {
         //error
+        return;
     }
     
     while(val == COLOR_GREEN)
     {
-        motor(z_motor, -10); // go up
+        z_motor->backward(false); // go up
         tslp_tsk(10);
         val = ev3_color_sensor_get_color(color_sensor);
     }
-    motor(z_motor, 0);
+    z_motor->stop();
 
     // find the limit between the blue and the green bricks
     while(val != COLOR_GREEN)
     {
-        motor(z_motor, 10); // go down
+        z_motor->forward(false); // go down
         tslp_tsk(10);
         val = ev3_color_sensor_get_color(color_sensor);
     }
-    motor(z_motor, 0);
+    z_motor->stop();
+    z_motor->acc = prev_acc;
+    z_motor->reset_pos();
+
+}
+
+void home_c()
+{
+    c_motor->find_home(-7, 80);
+    c_motor->reset_pos();
 }
 
 void home()
 {
+    
+    clearScreen();
+    print(0, "Claw Machine v01");
+    print(1, "Homing X");
     home_x();
+    print(2, "Homing Y");
     home_y();
+    print(3, "Homing Z");
     home_z();
+    print(4, "Homing C");
+    home_c();
+    print(5, "Finished homing");
+    ev3_color_sensor_get_reflect(color_sensor); // this mode uses less energy
 }
 
 void main_task(intptr_t unused)
@@ -196,13 +221,13 @@ void main_task(intptr_t unused)
     char buf[100];
     
     print(0, "Claw Machine v01");
-    sprintf(buf, "Port%c:X motor", 'A' + x_motor);
+    sprintf(buf, "Port%c:X motor", 'A' + x_motor_port);
     print(1, buf);
-    sprintf(buf, "Port%c:Y motor", 'A' + y_motor);
+    sprintf(buf, "Port%c:Y motor", 'A' + y_motor_port);
     print(2, buf);
-    sprintf(buf, "Port%c:Z motor", 'A' + z_motor);
+    sprintf(buf, "Port%c:Z motor", 'A' + z_motor_port);
     print(3, buf);
-    sprintf(buf, "Port%c:Claw motor", 'A' + c_motor);
+    sprintf(buf, "Port%c:Claw motor", 'A' + c_motor_port);
     print(4, buf);
     sprintf(buf, "Port%c:IR sensor",  '1' + ir_sensor);
     print(6, buf);
@@ -210,10 +235,23 @@ void main_task(intptr_t unused)
     print(7, buf);
 
     // Configure motors
-    ev3_motor_config(x_motor, LARGE_MOTOR);
-    ev3_motor_config(y_motor, LARGE_MOTOR);
-    ev3_motor_config(z_motor, LARGE_MOTOR);
-    ev3_motor_config(c_motor, MEDIUM_MOTOR);
+    x_motor = new Motor(x_motor_port, LARGE_MOTOR);
+    y_motor = new Motor(y_motor_port, LARGE_MOTOR);
+    z_motor = new Motor(z_motor_port, LARGE_MOTOR);
+    c_motor = new Motor(c_motor_port, MEDIUM_MOTOR);
+    
+    x_motor->direction = -1;
+    y_motor->direction = -1;
+    z_motor->direction =  1;
+    c_motor->direction = -1;
+    
+    x_motor->limit = 1400;
+    y_motor->limit = 2000;
+    z_motor->limit = 1850;
+    c_motor->limit = 2100;
+    
+    z_motor->home_pos = 1850;
+    c_motor->home_pos = 2100;
     
     // Configure sensors
     ev3_sensor_config(ir_sensor, INFRARED_SENSOR);

@@ -1,6 +1,6 @@
 APPL_COBJS += 
 
-APPL_CXXOBJS += utils.o
+APPL_CXXOBJS += utils.o cli_menu.o motor.o
 
 SRCLANG := c++
 

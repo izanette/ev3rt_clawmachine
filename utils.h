@@ -15,4 +15,8 @@ void waitNoButtonPressed();
 void clearScreen();
 void print(int line, const char* msg);
 
+float getTimeMillis();
+
+void motor(motor_port_t m, int power);
+
 #endif // __UTILS_H__
