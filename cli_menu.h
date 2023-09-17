@@ -1,6 +1,8 @@
 #ifndef __CLI_MENU_H__
 #define __CLI_MENU_H__
 
+#include "ev3api.h"
+
 extern FILE *fio;
 
 typedef struct {
@@ -30,8 +32,6 @@ static inline
 void fio_clear_line() {
     fprintf(fio, "\033[2K\033[255D"); // Clear Screen
 }
-
-extern const CliMenu climenu_main;
 
 extern int32_t default_menu_font_width;
 extern int32_t default_menu_font_height;
