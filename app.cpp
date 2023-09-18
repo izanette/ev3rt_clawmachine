@@ -50,12 +50,11 @@ void main_task(intptr_t unused)
     c_motor->direction = -1;
     
     x_motor->limit = 1400;
-    y_motor->limit = 2000;
+    y_motor->limit = 1900;
     z_motor->limit = 1850;
     c_motor->limit = 2100;
     
     z_motor->home_pos = 1850;
-    c_motor->home_pos = 2100;
     
     // Configure sensors
     ev3_sensor_config(IR_SENSOR_PORT, INFRARED_SENSOR);

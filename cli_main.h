@@ -11,3 +11,4 @@ extern const CliMenu climenu_main;
 
 void control(intptr_t unused);
 void homing(intptr_t unused);
+void claw_game(intptr_t unused);
