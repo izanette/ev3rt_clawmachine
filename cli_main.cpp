@@ -289,14 +289,24 @@ void stop_all_motors()
 void countdown_321_go()
 {
     seconds_counter = 4;
+    int prev_seconds = seconds_counter;
     ev3_sta_cyc(EV3_UPDATE_COUNTER);
+    ev3_speaker_set_volume(80);
     while(true)
     {
+        if (prev_seconds != seconds_counter)
+        {
+            prev_seconds = seconds_counter;
+            ev3_speaker_play_tone(NOTE_A4, 200);
+        }
+        
         if (seconds_counter <= 0)
         {
             ev3_stp_cyc(EV3_UPDATE_COUNTER);
             clearScreen();
             draw_image("/number_imgs/go.bmp", 0, 20);
+            ev3_speaker_set_volume(100);
+            ev3_speaker_play_tone(NOTE_A5, 500);
             return;
         }
         tslp_tsk(10);
@@ -312,6 +322,13 @@ void wait_for_ir()
         if (val.channel[1]) return;
         tslp_tsk(25);
     }
+}
+
+void bonus_seconds(int bonus)
+{
+    ev3_stp_cyc(EV3_UPDATE_COUNTER);
+    seconds_counter += bonus;
+    ev3_sta_cyc(EV3_UPDATE_COUNTER);
 }
 
 void claw_game(intptr_t unused)
@@ -339,6 +356,8 @@ void claw_game(intptr_t unused)
     {
         if (ev3_button_is_pressed(BACK_BUTTON))
         {
+            ev3_stp_cyc(EV3_UPDATE_COUNTER);
+            stop_all_motors();
             return;
         }
         
@@ -346,6 +365,11 @@ void claw_game(intptr_t unused)
         {
             ev3_stp_cyc(EV3_UPDATE_COUNTER);
             stop_all_motors();
+            
+            ev3_speaker_set_volume(80);
+            ev3_speaker_play_tone(NOTE_A4, 200);
+            tslp_tsk(100);
+            ev3_speaker_play_tone(NOTE_C4, 500);
             tslp_tsk(3000);
             return;
         }
@@ -408,6 +432,7 @@ void claw_game(intptr_t unused)
                         open_claw();
                         claw_is_open = true;
                         go_to(-1, -1, 0); // raise the claw
+                        bonus_seconds(20);
                     }
                 }
                 
