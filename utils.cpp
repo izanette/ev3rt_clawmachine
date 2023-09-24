@@ -96,3 +96,14 @@ void motor(motor_port_t m, int power)
     else
         ev3_motor_stop(m, false);
 }
+
+void draw_image(const char* path, int x, int y)
+{
+    static memfile_t memfile = { .buffer = NULL };
+    static image_t image;
+    if (memfile.buffer != NULL) ev3_memfile_free(&memfile);
+    if (image.data != NULL) ev3_image_free(&image);
+    ev3_memfile_load(path, &memfile);
+    ev3_image_load(&memfile, &image);
+    ev3_lcd_draw_image(&image, x, y);
+}

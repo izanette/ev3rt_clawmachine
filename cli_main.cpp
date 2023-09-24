@@ -17,7 +17,7 @@ Motor* c_motor;
 static const CliMenuEntry entry_tab[] = {
     { .key = '1', .title = "Control",    .handler = control },
     { .key = '2', .title = "Homing",     .handler = homing },
-    { .key = '3', .title = "Claw",       .handler = claw_game },
+    { .key = '3', .title = "Claw Game",  .handler = claw_game },
 };
 
 const CliMenu climenu_main = {
@@ -278,6 +278,42 @@ void go_to(int32_t x, int32_t y, int32_t z)
     }
 }
 
+void stop_all_motors()
+{
+    x_motor->stop();
+    y_motor->stop();
+    z_motor->stop();
+    c_motor->stop();
+}
+
+void countdown_321_go()
+{
+    seconds_counter = 4;
+    ev3_sta_cyc(EV3_UPDATE_COUNTER);
+    while(true)
+    {
+        if (seconds_counter <= 0)
+        {
+            ev3_stp_cyc(EV3_UPDATE_COUNTER);
+            clearScreen();
+            draw_image("/number_imgs/go.bmp", 0, 20);
+            return;
+        }
+        tslp_tsk(10);
+    }
+}
+
+void wait_for_ir()
+{
+    while(true)
+    {
+        ir_remote_t val = ev3_infrared_sensor_get_remote(IR_SENSOR_PORT);
+        if (val.channel[0]) return;
+        if (val.channel[1]) return;
+        tslp_tsk(25);
+    }
+}
+
 void claw_game(intptr_t unused)
 {
     //char buf[100];
@@ -291,13 +327,15 @@ void claw_game(intptr_t unused)
     go_to(x_motor->limit/2, y_motor->limit/2, -1);
     open_claw();
     claw_is_open = true;
-    bool running = true;
+    
+    countdown_321_go();
+    wait_for_ir(); 
     
     // start the countdown display
     seconds_counter = 91;
     ev3_sta_cyc(EV3_UPDATE_COUNTER);
     
-    while (running)
+    while (true)
     {
         if (ev3_button_is_pressed(BACK_BUTTON))
         {
@@ -307,6 +345,7 @@ void claw_game(intptr_t unused)
         if (seconds_counter <= 0)
         {
             ev3_stp_cyc(EV3_UPDATE_COUNTER);
+            stop_all_motors();
             tslp_tsk(3000);
             return;
         }
@@ -363,19 +402,20 @@ void claw_game(intptr_t unused)
                     }
                     else
                     {
+                        // drop in the bin if it is closed
+                        go_to(x_motor->limit, 0, -1); // move to the bin
+                        go_to(-1, -1, x_motor->limit-250); // lower the claw
                         open_claw();
                         claw_is_open = true;
+                        go_to(-1, -1, 0); // raise the claw
                     }
                 }
                 
-                // drop in the bin if it is closed
                 if (!claw_is_open && (blueup || bluedown))
                 {
-                    go_to(x_motor->limit, 0, -1); // move to the bin
-                    go_to(-1, -1, x_motor->limit-250); // lower the claw
+                    // cancel the drop
                     open_claw();
                     claw_is_open = true;
-                    go_to(-1, -1, 0); // raise the claw
                 }
             }
         }

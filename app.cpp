@@ -27,8 +27,10 @@ BigNumber bignumber;
 void update_counter(intptr_t exinf)
 {
     clearScreen();
-    if (seconds_counter >= 0)
+    if (seconds_counter > 0)
         bignumber.draw(--seconds_counter);
+    else
+        bignumber.draw(0);
 }
 
 void main_task(intptr_t unused)

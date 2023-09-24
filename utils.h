@@ -18,5 +18,6 @@ void print(int line, const char* msg);
 float getTimeMillis();
 
 void motor(motor_port_t m, int power);
+void draw_image(const char* path, int x, int y);
 
 #endif // __UTILS_H__
