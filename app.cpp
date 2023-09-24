@@ -9,7 +9,9 @@
 #include "motor.h"
 #include "cli_menu.h"
 #include "cli_main.h"
+#include "bignumber.h"
 #include "parameters.h"
+#include "seconds_counter.h"
 #include <stdlib.h>
 
 #define DEBUG
@@ -19,6 +21,15 @@
 #else
 #define _debug(x)
 #endif
+
+BigNumber bignumber;
+
+void update_counter(intptr_t exinf)
+{
+    clearScreen();
+    if (seconds_counter >= 0)
+        bignumber.draw(--seconds_counter);
+}
 
 void main_task(intptr_t unused)
 {

@@ -5,6 +5,7 @@
 #include "motor.h"
 #include "cli_menu.h"
 #include "cli_main.h"
+#include "seconds_counter.h"
 #include "parameters.h"
 #include <stdlib.h>
 
@@ -279,21 +280,34 @@ void go_to(int32_t x, int32_t y, int32_t z)
 
 void claw_game(intptr_t unused)
 {
-    char buf[100];
+    //char buf[100];
     bool claw_is_open;
     
     ev3_lcd_fill_rect(0, 0, EV3_LCD_WIDTH, EV3_LCD_HEIGHT, EV3_LCD_WHITE);
     draw_title("Claw Game", 0, 0, MENU_FONT);
-    
+
+    // move to central position and open the claw
     go_to(-1, -1, 0);
     go_to(x_motor->limit/2, y_motor->limit/2, -1);
     open_claw();
     claw_is_open = true;
+    bool running = true;
     
-    while (1)
+    // start the countdown display
+    seconds_counter = 91;
+    ev3_sta_cyc(EV3_UPDATE_COUNTER);
+    
+    while (running)
     {
         if (ev3_button_is_pressed(BACK_BUTTON))
         {
+            return;
+        }
+        
+        if (seconds_counter <= 0)
+        {
+            ev3_stp_cyc(EV3_UPDATE_COUNTER);
+            tslp_tsk(3000);
             return;
         }
         
@@ -368,6 +382,8 @@ void claw_game(intptr_t unused)
         // wait 10 mili-seconds
         tslp_tsk(10);
         
+        //bignumber.draw((int)90-(getTimeMillis()-start_game)/1000.0);
+        /*
         sprintf(buf, "X pos: %ld", x_motor->get_pos());
         print(2, buf);
         sprintf(buf, "Y pos: %ld", y_motor->get_pos());
@@ -376,5 +392,6 @@ void claw_game(intptr_t unused)
         print(4, buf);
         sprintf(buf, "C pos: %ld", c_motor->get_pos());
         print(5, buf);
+        */
     }
 }
