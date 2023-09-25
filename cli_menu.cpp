@@ -9,6 +9,7 @@
 #include "app.h"
 #include "utils.h"
 #include "cli_menu.h"
+#include "parameters.h"
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -71,24 +72,38 @@ const CliMenuEntry* select_menu_entry(const CliMenu *cm, int offset_x, int offse
     while (!select_finished) {
         draw_menu_entry(cm, current, true, offset_x, offset_y, font);
         while(1) {
-            if (ev3_button_is_pressed(UP_BUTTON)) {
+            
+            ir_remote_t val = ev3_infrared_sensor_get_remote(IR_SENSOR_PORT);
+            
+            int redup1    = (val.channel[0] & IR_RED_UP_BUTTON);
+            int reddown1  = (val.channel[0] & IR_RED_DOWN_BUTTON);
+            int blueup1   = (val.channel[0] & IR_BLUE_UP_BUTTON);
+            int bluedown1 = (val.channel[0] & IR_BLUE_DOWN_BUTTON);
+            int redup2    = (val.channel[1] & IR_RED_UP_BUTTON);
+            int reddown2  = (val.channel[1] & IR_RED_DOWN_BUTTON);
+            int blueup2   = (val.channel[1] & IR_BLUE_UP_BUTTON);
+            int bluedown2 = (val.channel[1] & IR_BLUE_DOWN_BUTTON);
+            
+            if (ev3_button_is_pressed(UP_BUTTON) || redup1 || blueup1) {
                 while(ev3_button_is_pressed(UP_BUTTON));
+                while(ev3_infrared_sensor_get_remote(IR_SENSOR_PORT).channel[0]);
                 draw_menu_entry(cm, current, false, offset_x, offset_y, font);
                 current = (current - 1) % cm->entry_num;
                 break;
             }
-            if (ev3_button_is_pressed(DOWN_BUTTON)) {
+            if (ev3_button_is_pressed(DOWN_BUTTON) || reddown1 || bluedown1) {
                 while(ev3_button_is_pressed(DOWN_BUTTON));
+                while(ev3_infrared_sensor_get_remote(IR_SENSOR_PORT).channel[0]);
                 draw_menu_entry(cm, current, false, offset_x, offset_y, font);
                 current = (current + 1) % cm->entry_num;
                 break;
             }
-            if (ev3_button_is_pressed(ENTER_BUTTON)) {
+            if (ev3_button_is_pressed(ENTER_BUTTON) || redup2 || reddown2) {
                 while(ev3_button_is_pressed(ENTER_BUTTON));
                 select_finished = true;
                 break;
             }
-            if (ev3_button_is_pressed(BACK_BUTTON)) {
+            if (ev3_button_is_pressed(BACK_BUTTON) || blueup2 || bluedown2) {
                 while(ev3_button_is_pressed(BACK_BUTTON));
                 for(SIZE i = 0; i < cm->entry_num; ++i) {
                     if(toupper(cm->entry_tab[i].key) == toupper((int8_t)'Q')) { // BACK => 'Q'
@@ -98,6 +113,7 @@ const CliMenuEntry* select_menu_entry(const CliMenu *cm, int offset_x, int offse
                 }
                 break;
             }
+            
         }
     }
 
