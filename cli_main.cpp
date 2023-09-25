@@ -127,7 +127,9 @@ void home_x()
 {
     uint8_t val = ev3_color_sensor_get_reflect(COLOR_SENSOR_PORT);
     float prev_acc = x_motor->acc;
+    int prev_speed = x_motor->speed_min;
     x_motor->acc = 0.0;
+    x_motor->speed_min = 15;
     while(val < 25)
     {
         x_motor->backward(false);
@@ -137,6 +139,7 @@ void home_x()
     motor(X_MOTOR_PORT, 0);
     x_motor->stop();
     x_motor->acc = prev_acc;
+    x_motor->speed_min = prev_speed;
     x_motor->reset_pos();
 }
 
@@ -144,7 +147,9 @@ void home_y()
 {
     colorid_t val = ev3_color_sensor_get_color(COLOR_SENSOR_PORT);
     float prev_acc = y_motor->acc;
+    int prev_speed = y_motor->speed_min;
     y_motor->acc = 0.0;
+    y_motor->speed_min = 15;
     while(val != COLOR_BLUE && val != COLOR_GREEN)
     {
         y_motor->backward(false);
@@ -154,9 +159,10 @@ void home_y()
     
     // run a little bit more so it points towards 
     // the center of the blue/green brick
-    tslp_tsk(500); // todo: substitute by a count movement instead of a timed one
+    tslp_tsk(300); // todo: substitute by a count movement instead of a timed one
     y_motor->stop();
     y_motor->acc = prev_acc;
+    y_motor->speed_min = prev_speed;
     y_motor->reset_pos();
 }
 
@@ -165,7 +171,9 @@ void home_z()
     // assume home_y was done before. so either the color sensor is sensing BLUE or GREEN
     colorid_t val = ev3_color_sensor_get_color(COLOR_SENSOR_PORT);
     float prev_acc = z_motor->acc;
+    int prev_speed = z_motor->speed_min;
     z_motor->acc = 0.0;
+    z_motor->speed_min = 12;
     if (val != COLOR_BLUE && val != COLOR_GREEN)
     {
         //error
@@ -189,6 +197,7 @@ void home_z()
     }
     z_motor->stop();
     z_motor->acc = prev_acc;
+    z_motor->speed_min = prev_speed;
     z_motor->reset_pos();
 
 }
@@ -221,7 +230,7 @@ void homing(intptr_t unused)
 
 void open_claw()
 {
-    while(c_motor->get_pos() > 300)
+    while(c_motor->get_pos() > 250)
     {
         c_motor->backward();
         tslp_tsk(10);
@@ -336,6 +345,11 @@ void claw_game(intptr_t unused)
     //char buf[100];
     bool claw_is_open;
     
+    float prev_acc = z_motor->acc;
+    int   prev_speed = z_motor->speed_min;
+    z_motor->acc = 0.0;
+    z_motor->speed_min = 80;
+    
     ev3_lcd_fill_rect(0, 0, EV3_LCD_WIDTH, EV3_LCD_HEIGHT, EV3_LCD_WHITE);
     draw_title("Claw Game", 0, 0, MENU_FONT);
 
@@ -358,6 +372,8 @@ void claw_game(intptr_t unused)
         {
             ev3_stp_cyc(EV3_UPDATE_COUNTER);
             stop_all_motors();
+            z_motor->acc = prev_acc;
+            z_motor->speed_min = prev_speed;
             return;
         }
         
@@ -365,6 +381,8 @@ void claw_game(intptr_t unused)
         {
             ev3_stp_cyc(EV3_UPDATE_COUNTER);
             stop_all_motors();
+            z_motor->acc = prev_acc;
+            z_motor->speed_min = prev_speed;
             
             ev3_speaker_set_volume(80);
             ev3_speaker_play_tone(NOTE_A4, 200);
@@ -432,7 +450,7 @@ void claw_game(intptr_t unused)
                         open_claw();
                         claw_is_open = true;
                         go_to(-1, -1, 0); // raise the claw
-                        bonus_seconds(20);
+                        //bonus_seconds(15);
                     }
                 }
                 

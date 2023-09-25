@@ -69,6 +69,12 @@ void main_task(intptr_t unused)
     
     z_motor->home_pos = 1850;
     
+    c_motor->acc = 0.0;
+    c_motor->speed_min = 50;
+
+    x_motor->speed_min = 30;
+    y_motor->speed_min = 30;
+    
     // Configure sensors
     ev3_sensor_config(IR_SENSOR_PORT, INFRARED_SENSOR);
     ev3_sensor_config(COLOR_SENSOR_PORT, COLOR_SENSOR);
